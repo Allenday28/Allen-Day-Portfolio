@@ -1,12 +1,26 @@
 # 🔄 Automated ETL Data Pipeline
 
-> **Building a production-ready data ingestion and transformation pipeline**
+> **A runnable demonstration of data ingestion, cleaning, validation, and SQLite loading**
 
 [![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)]()
 [![SQL](https://img.shields.io/badge/SQL-4479A1?style=flat&logo=mysql&logoColor=white)]()
 [![Pandas](https://img.shields.io/badge/Pandas-150458?style=flat&logo=pandas&logoColor=white)]()
 
 ---
+
+## Run the demonstration
+
+From this directory, with Python 3.10+:
+
+```bash
+python -m pip install pandas numpy pytest
+python etl_pipeline.py
+python -m pytest -q
+```
+
+If input files are absent, the script generates synthetic CRM, billing, and marketing records. A full demo loads 1,200 customers, 3,600 transactions, and 2,400 marketing events into `analytics.db`. Run CRM before billing and marketing because their records reference customers. Repeating a full run updates existing records without deleting parent customer rows.
+
+The bundled implementation reads local CSV and JSON exports. Scheduling, live REST requests, retries, and file-change detection are extension ideas; they are not implemented by this script. The before/after business figures below are not measured by the synthetic demo.
 
 ## 📌 Problem Statement
 
@@ -53,9 +67,9 @@ Raw data from three different business systems (CRM, billing platform, marketing
 ```
 
 ### Extract Phase
-- CSV reader with encoding detection (UTF-8, Lattn-1 fallback)
-- REST API client with retry logic (3 attempts, exponential backoff)
-- File change detection to avoid reprocessing
+- CSV reader with encoding detection (UTF-8, Latin-1 fallback)
+- Billing JSON export reader using `pandas.json_normalize`
+- Synthetic fallback data when source files are missing
 
 ### Transform Phase
 - **Date Standardization:** Unified all formats to ISO 8601
@@ -65,8 +79,8 @@ Raw data from three different business systems (CRM, billing platform, marketing
 - **Data Validation:** 14 business rules checked before load
 
 ### Load Phase
-- Upsert logic (INSERT OR REPLACE) to handle reruns safely
-- Schema validation before every load
+- Upsert logic (INSERT … ON CONFLICT DO UPDATE) to handle reruns safely
+- SQLite schema and foreign-key constraints enforce load integrity
 - Row count reconciliation (source vs. destination)
 
 ---
@@ -99,7 +113,7 @@ etl-data-pipeline/
 ├── README.md
 ├── etl_pipeline.py           # Main pipeline script
 ├── transform/
-│   !├── cleaners.py           # Data cleaning functions
+│   ├── cleaners.py           # Data cleaning functions
 │   └── validators.py         # Business rule validation
 ├── sql/
 │   └── create_tables.sql     # Target schema DDL

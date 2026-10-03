@@ -206,3 +206,23 @@ class TestValidationPipeline:
         # T003 and T004 have non-positive amounts → should fail
         assert len(result.failed) >= 2
         assert len(result.passed) + len(result.failed) == len(sample_transactions)
+
+
+def test_demo_pipeline_can_be_rerun_without_foreign_key_failures(tmp_path, monkeypatch):
+    import etl_pipeline as pipeline
+    import sqlite3
+
+    db_path = tmp_path / "analytics.db"
+    original_init = pipeline.init_db
+    monkeypatch.setattr(pipeline, "init_db", lambda: original_init(db_path))
+    monkeypatch.setattr(pipeline, "DATA_DIR", tmp_path / "missing-inputs")
+    for _ in range(2):
+        stats = pipeline.run_pipeline()
+        assert all(item["status"] == "success" for item in stats.values()), stats
+        assert {key: item["loaded"] for key, item in stats.items()} == {
+            "crm": 1200, "billing": 3600, "marketing": 2400,
+        }
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute("PRAGMA foreign_key_check").fetchall() == []
+        assert conn.execute("SELECT COUNT(*) FROM fact_transactions").fetchone()[0] == 3600
+        assert conn.execute("SELECT COUNT(*) FROM vw_customer_revenue_summary").fetchone()[0] == 1200

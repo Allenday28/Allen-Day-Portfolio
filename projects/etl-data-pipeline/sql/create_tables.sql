@@ -56,7 +56,9 @@ CREATE TABLE IF NOT EXISTS etl_run_log (
 );
 
 -- ── Materialized summary view ─────────────────────────────────
-CREATE VIEW IF NOT EXISTS vw_customer_revenue_summary ASSELECT�customer_id,
+CREATE VIEW IF NOT EXISTS vw_customer_revenue_summary AS
+SELECT
+    c.customer_id,
     c.email,
     c.region,
     c.source_system,

@@ -111,7 +111,7 @@ def _simulate_data(source: str) -> pd.DataFrame:
             "email": [f"user{i}@example.com" for i in range(n)],
             "full_name": [f"Customer {i}" for i in range(n)],
             "region": np.random.choice(["West", "East", "Central", "South"], n),
-            "signup_date": pd.date_range("2021-01-01", periods=n, freq="6H").strftime("%Y-%m-%d"),
+            "signup_date": pd.date_range("2021-01-01", periods=n, freq="6h").strftime("%Y-%m-%d"),
             "source_system": "crm",
         })
 
@@ -123,7 +123,7 @@ def _simulate_data(source: str) -> pd.DataFrame:
             "amount": np.abs(np.random.lognormal(4.8, 1.1, n * 3)).round(2),
             "currency": np.random.choice(["USD", "EUR", "GBP", "CAD"], n * 3,
                                           p=[0.70, 0.15, 0.10, 0.05]),
-            "transaction_date": pd.date_range("2022-01-01", periods=n * 3, freq="2H").strftime("%Y-%m-%d"),
+            "transaction_date": pd.date_range("2022-01-01", periods=n * 3, freq="2h").strftime("%Y-%m-%d"),
             "product_sku": np.random.choice(["SKU-001", "SKU-002", "SKU-003", "SKU-004"], n * 3),
             "payment_method": np.random.choice(["card", "ach", "paypal"], n * 3),
             "status": np.random.choice(["completed", "completed", "completed",
@@ -141,7 +141,7 @@ def _simulate_data(source: str) -> pd.DataFrame:
                                           "referral program"], n * 2),
             "event_type": np.random.choice(["open", "click", "convert"], n * 2,
                                             p=[0.5, 0.35, 0.15]),
-            "event_date": pd.date_range("2022-01-01", periods=n * 2, freq="1H").strftime("%Y-%m-%d"),
+            "event_date": pd.date_range("2022-01-01", periods=n * 2, freq="1h").strftime("%Y-%m-%d"),
             "revenue_attr": np.where(np.random.random(n * 2) > 0.85,
                                       np.abs(np.random.normal(150, 50, n * 2)), 0).round(2),
         })
@@ -152,7 +152,7 @@ def _simulate_data(source: str) -> pd.DataFrame:
 # ─── TRANSFORM ──────────────────────────────────────────────────────────────
 
 def transform_customers(df: pd.DataFrame) -> pd.DataFrame:
-    logger.info("Transforming customerr…")
+    logger.info("Transforming customers…")
     df = clean_text_columns(df, lower_cols=["email"], strip_cols=["full_name", "region"])
     df = standardize_dates(df, ["signup_date"])
     df = deduplicate(df, key_columns=["customer_id"])
@@ -167,7 +167,7 @@ def transform_transactions(df: pd.DataFrame) -> pd.DataFrame:
     df = normalize_currency(df, amount_col="amount", currency_col="currency")
     df = deduplicate(df, key_columns=["transaction_id"])
     df = handle_missing_values(df)
-    return df
+    return df.drop(columns=["amount"]).rename(columns={"currency": "currency_orig"})
 
 
 def transform_marketing(df: pd.DataFrame) -> pd.DataFrame:
@@ -184,15 +184,19 @@ def transform_marketing(df: pd.DataFrame) -> pd.DataFrame:
 def upsert(conn: sqlite3.Connection, df: pd.DataFrame,
            table: str, pk_col: str) -> int:
     """
-    INSERT OR REPLACE rows into target table.
+    Insert rows or update an existing primary key without deleting parent rows.
     Returns number of rows written.
     """
     if df.empty:
         return 0
     placeholders = ", ".join(["?"] * len(df.columns))
     cols = ", ".join(df.columns)
-    sql = f"INSERT OR REPLACE INTO {table} ({cols}) VALUES ({placeholders})"
-    conn.executemany(sql, df.values.tolist())
+    updates = ", ".join(f"{col} = excluded.{col}" for col in df.columns if col != pk_col)
+    conflict = f"DO UPDATE SET {updates}" if updates else "DO NOTHING"
+    sql = (f"INSERT INTO {table} ({cols}) VALUES ({placeholders}) "
+           f"ON CONFLICT({pk_col}) {conflict}")
+    rows = df.astype(object).where(df.notna(), None).values.tolist()
+    conn.executemany(sql, rows)
     conn.commit()
     logger.info(f"Loaded {len(df):,} rows → {table}")
     return len(df)
