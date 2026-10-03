@@ -4,7 +4,7 @@
 
 ### Data Scientist | Data Analyst | Business Intelligence
 
-*MS Data Science Candidate · Law Student · Partner & Business Development Manager · AI Builder*
+*MS Data Science Candidate · Law Student · CTE Teacher · Partner & Business Development Manager · AI Builder*
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/mrallenday31/)
 [![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:allen.day@me.com)
@@ -19,6 +19,8 @@
 I'm a data scientist and business strategist with a unique background spanning **legal studies**, **business development**, and **applied data science**. Currently pursuing my **Master's in Data Science**, I specialize in turning complex datasets into clear, actionable business insights.
 
 At **Convert-Via**, I've applied data-driven thinking to partnership strategy, revenue analysis, and business growth — bridging the gap between technical analysis and real-world decision-making. I'm also the creator of **DermaMind AI**, a personalized skincare intelligence app powered by machine learning.
+
+I also teach **Career and Technical Education (CTE)** courses in **Business Law**, **Marketing Labs**, **Entrepreneurship Lab**, and **Intro to Business**. This teaching role connects my interests in business, law, and applied learning.
 
 I'm actively seeking roles in **Data Analysis**, **Data Science**, and **Business Intelligence** where I can combine my analytical skills with strategic business acumen.
 
